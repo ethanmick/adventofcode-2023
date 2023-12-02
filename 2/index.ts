@@ -59,13 +59,8 @@ const games: Game[] = parse(input).map((gi) => {
   }
 })
 
-console.log('Games', games, games[0])
-
-// 12 red cubes, 13 green cubes, and 14 blue cubes
-const possibleGames = games.filter(
-  (g) => g.red <= 12 && g.green <= 13 && g.blue <= 14
-)
-const total = possibleGames.reduce((total, g) => total + g.id, 0)
+const powers = games.map((g) => g.blue * g.green * g.red)
+const total = powers.reduce((total, p) => total + p, 0)
 console.log('Total', total)
 
 // const games: Game[] = input.split(/\r?\n/).map((line: string) => {
