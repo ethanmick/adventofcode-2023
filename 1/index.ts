@@ -12,31 +12,18 @@ const numbers = {
   nine: 9,
 }
 
-const lines = input.split(/\r?\n/)
-const totals = lines.map((line) => {
+const find = (s: string) =>
+  s.match(new RegExp(`(\\d|${Object.keys(numbers).join('|')})`, 'gi'))
+
+const totals = input.split(/\r?\n/).map((line) => {
   let nums = ``
-  let found = line.match(
-    new RegExp(`(\\d|${Object.keys(numbers).join('|')})`, 'gi')
-  )
+  let found = find(line)
   while (found) {
     const n = found[0]
     nums += isNaN(parseInt(n)) ? numbers[n] : n
     line = line.slice(Math.max(n.length - 1, 1))
-    found = line.match(
-      new RegExp(`(\\d|${Object.keys(numbers).join('|')})`, 'gi')
-    )
+    found = find(line)
   }
-
-  // const nums = line.matchAll(
-  //   new RegExp(`(\\d|${Object.keys(numbers).join('|')})`, 'gi')
-  // )
-  // const nums = line
-  //   .replace(
-  //     new RegExp(`${Object.keys(numbers).join('|')}`, 'gi'),
-  //     (found) => numbers[found]
-  //   )
-  //   .replace(/\D/gi, '')
-  console.log('Line:', line, nums, Number(`${nums[0]}${nums[nums.length - 1]}`))
   return Number(`${nums[0]}${nums[nums.length - 1]}`)
 })
 
