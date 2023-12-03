@@ -12,6 +12,13 @@ type Part = {
   part: number
 }
 
+type Gear = {
+  point: Point
+  parts: Part[]
+}
+
+const hash = (p: Part) => `${p.point.y}.${p.point.x}.${p.part}`
+
 const isValid = (grid: Grid) => (p: Point) =>
   p.x >= 0 && p.x < grid[0].length && p.y >= 0 && p.y < grid.length
 
@@ -19,9 +26,11 @@ const read = () => readFile('./input.txt', 'utf8')
 
 const isSymbol = (s: string) => /[^\.\d]/.test(s)
 
+const isGear = (s: string) => s === '*'
+
 const isNumber = (s: string | undefined) => s && /\d/.test(s)
 
-const getPartNumber = (line: string[], i: number): number => {
+const getPartNumber = (line: string[], i: number): { n: number; i: number } => {
   let j = i,
     k = i,
     parts = `${line[i]}`
@@ -38,7 +47,10 @@ const getPartNumber = (line: string[], i: number): number => {
       break
     }
   }
-  return Number(parts)
+  return {
+    n: Number(parts),
+    i: j,
+  }
 }
 
 const getAdjacent = (y: number, x: number, z: number): Point[] => {
@@ -63,7 +75,7 @@ const main = async () => {
       if (isNumber(grid[y][x])) {
         const part = {
           point: { x, y },
-          part: getPartNumber(grid[y], x),
+          part: getPartNumber(grid[y], x).n,
         }
         parts.push(part)
         x += `${part.part}`.length
@@ -73,15 +85,41 @@ const main = async () => {
     }
   }
 
-  const actualParts = parts.filter((p) => {
-    const s = `${p.part}`
-    const adj = getAdjacent(p.point.y, p.point.x, s.length).filter(valid)
-    return adj.some((p) => isSymbol(grid[p.y][p.x]))
-  })
+  // Part 2
+  const partsHash: Record<string, Part> = {}
+  parts.forEach((p) => (partsHash[hash(p)] = p))
+
+  const gears: Gear[] = []
+  for (let y = 0; y < grid.length; y++) {
+    for (let x = 0; x < grid[0].length; x++) {
+      if (isGear(grid[y][x])) {
+        const adj = getAdjacent(y, x, 1).filter(valid)
+        const found: Record<string, Part> = {}
+        for (let a of adj) {
+          if (isNumber(grid[a.y][a.x])) {
+            const { n, i } = getPartNumber(grid[a.y], a.x)
+            const part: Part = {
+              point: { y: a.y, x: i },
+              part: n,
+            }
+            found[hash(part)] = part
+          }
+        }
+        if (Object.keys(found).length == 2) {
+          gears.push({
+            point: { x, y },
+            parts: Object.values(found),
+          })
+        }
+      }
+    }
+  }
 
   console.log(
     'Total',
-    actualParts.map((p) => p.part).reduce((total, p) => total + p, 0)
+    gears
+      .map((g) => g.parts[0].part * g.parts[1].part)
+      .reduce((total, p) => total + p, 0)
   )
 }
 
