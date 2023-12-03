@@ -1,12 +1,19 @@
 import { readFile } from 'fs/promises'
 
+type Grid = string[][]
+
 type Point = {
   x: number
   y: number
 }
 
-const isValid = (maxY: number, maxX: number) => (p: Point) =>
-  p.x >= 0 && p.x < maxX && p.y >= 0 && p.y < maxY
+type Part = {
+  point: Point
+  part: number
+}
+
+const isValid = (grid: Grid) => (p: Point) =>
+  p.x >= 0 && p.x < grid[0].length && p.y >= 0 && p.y < grid.length
 
 const read = () => readFile('./input.txt', 'utf8')
 
@@ -18,7 +25,7 @@ const getPartNumber = (line: string[], i: number): number => {
   let j = i,
     k = i,
     parts = `${line[i]}`
-  do {
+  while (true) {
     if (isNumber(line[j - 1])) {
       j--
       parts = line[j] + parts
@@ -30,45 +37,51 @@ const getPartNumber = (line: string[], i: number): number => {
     if (!isNumber(line[j - 1]) && !isNumber(line[k + 1])) {
       break
     }
-  } while (true)
+  }
   return Number(parts)
 }
 
-const getAdjacent = (y: number, x: number, grid: string[][]): Point[] => {
-  const valid = isValid(grid.length, grid[0].length)
-  return [-1, 0, 1]
-    .flatMap((i) =>
-      [-1, 0, 1].map((j) => ({
-        y: y + i,
-        x: x + j,
-      }))
-    )
-    .filter(valid)
+const getAdjacent = (y: number, x: number, z: number): Point[] => {
+  const xs = [...Array(z + 2).fill(0)].map((_, i) => i + x - 1)
+  return xs.flatMap((x1) =>
+    [-1, 0, 1].map((y1) => ({
+      y: y + y1,
+      x: x1,
+    }))
+  )
 }
 
 const main = async () => {
   const input = await read()
-  const grid = input.split(/\r?\n/).map((line) => line.split(''))
-  const parts: Record<number, boolean> = {}
+  const grid: Grid = input.split(/\r?\n/).map((line) => line.split(''))
+  const valid = isValid(grid)
+  const parts: Part[] = []
 
   for (let y = 0; y < grid.length; y++) {
-    for (let x = 0; x < grid[0].length; x++) {
-      const c = grid[y][x]
-      if (isSymbol(c)) {
-        const adj = getAdjacent(y, x, grid)
-        const all = adj
-          .filter((p) => isNumber(grid[p.y][p.x]))
-          .map((p) => getPartNumber(grid[p.y], p.x))
-        all.forEach((n) => (parts[n] = true))
+    let x = 0
+    while (x < grid[0].length) {
+      if (isNumber(grid[y][x])) {
+        const part = {
+          point: { x, y },
+          part: getPartNumber(grid[y], x),
+        }
+        parts.push(part)
+        x += `${part.part}`.length
+      } else {
+        x++
       }
     }
   }
 
+  const actualParts = parts.filter((p) => {
+    const s = `${p.part}`
+    const adj = getAdjacent(p.point.y, p.point.x, s.length).filter(valid)
+    return adj.some((p) => isSymbol(grid[p.y][p.x]))
+  })
+
   console.log(
     'Total',
-    Object.keys(parts)
-      .map(Number)
-      .reduce((total, p) => total + p, 0)
+    actualParts.map((p) => p.part).reduce((total, p) => total + p, 0)
   )
 }
 
