@@ -8,9 +8,13 @@ type Card = {
   numbers: Set<number>
 }
 
-const points = (c: Card): number => {
-  const intersection = new Set([...c.numbers].filter((x) => c.winners.has(x)))
-  return [...intersection].reduce((total) => (total == 0 ? 1 : total * 2), 0)
+const won = (c: Card): Set<number> => {
+  const n = new Set([...c.numbers].filter((x) => c.winners.has(x))).size
+  return new Set(
+    Array(n)
+      .fill(0)
+      .map((_, i) => c.id + 1 + i)
+  )
 }
 
 const parse = (input: string): Card[] =>
@@ -30,10 +34,23 @@ const parse = (input: string): Card[] =>
   })
 
 const main = async () => {
-  const cards = parse(await read())
+  const cards: Record<number, Card> = {}
+  const processed: Record<number, number> = {}
+  const all = parse(await read())
+  all.forEach((c) => (cards[c.id] = c))
+
+  const queue = [...all]
+  let c: Card | undefined = queue.shift()
+  while (c) {
+    processed[c.id] = processed[c.id] ? processed[c.id] + 1 : 1
+    const wonCards = won(c)
+    queue.push(...[...wonCards].map((id) => cards[id]))
+    c = queue.shift()
+  }
+
   console.log(
-    'Points:',
-    cards.map(points).reduce((total, p) => total + p)
+    'Total Cards:',
+    Object.values(processed).reduce((total, p) => total + p)
   )
 }
 
