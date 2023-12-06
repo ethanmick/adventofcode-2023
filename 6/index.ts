@@ -11,10 +11,12 @@ const parse = async (): Promise<Record[]> => {
   const [time, distance] = (await read()).split(/\r?\n/)
   const times = time.split(':')[1].trim().split(/\s+/).map(Number)
   const distances = distance.split(':')[1].trim().split(/\s+/).map(Number)
-  return times.map((_, i) => ({
-    time: times[i],
-    distance: distances[i],
-  }))
+  return [
+    {
+      time: Number(times.join('')),
+      distance: Number(distances.join('')),
+    },
+  ]
 }
 
 const main = async () => {
