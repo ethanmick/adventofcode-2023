@@ -21,7 +21,6 @@ const CardValues: Record<Card, number> = {
   A: 14,
   K: 13,
   Q: 12,
-  J: 11,
   T: 10,
   '9': 9,
   '8': 8,
@@ -31,6 +30,7 @@ const CardValues: Record<Card, number> = {
   '4': 4,
   '3': 3,
   '2': 2,
+  J: 1,
 }
 
 type Bid = number
@@ -63,14 +63,6 @@ const getType = (hand: Hand) => {
           {}
         )
       ).find((v) => v == 4),
-    [Type.ThreeOfAKind]: (hand: Hand) =>
-      !!Object.values(
-        hand.reduce(
-          (counter, card) =>
-            (counter[card] = counter[card] ? counter[card] + 1 : 1) && counter,
-          {}
-        )
-      ).find((v) => v == 3),
     [Type.FullHouse]: (hand: Hand) => {
       const set = new Set(
         Object.values(
@@ -84,6 +76,14 @@ const getType = (hand: Hand) => {
       )
       return set.has(2) && set.has(3)
     },
+    [Type.ThreeOfAKind]: (hand: Hand) =>
+      !!Object.values(
+        hand.reduce(
+          (counter, card) =>
+            (counter[card] = counter[card] ? counter[card] + 1 : 1) && counter,
+          {}
+        )
+      ).find((v) => v == 3),
     [Type.TwoPair]: (hand: Hand) =>
       Object.values(
         hand.reduce(
@@ -108,6 +108,23 @@ const getType = (hand: Hand) => {
       type = key
       break
     }
+  }
+
+  const handType = Number(type)
+  const jokers = hand.filter((c) => c == 'J').length
+
+  const jokerMap: Record<Type, Function> = {
+    [Type.FiveOfAKind]: (_: number) => Type.FiveOfAKind,
+    [Type.FourOfAKind]: (_: number) => Type.FiveOfAKind,
+    [Type.FullHouse]: (_: number) => Type.FiveOfAKind,
+    [Type.ThreeOfAKind]: (_: number) => Type.FourOfAKind,
+    [Type.TwoPair]: (n: number) => (n == 1 ? Type.FullHouse : Type.FourOfAKind),
+    [Type.OnePair]: (_: number) => Type.ThreeOfAKind,
+    [Type.HighCard]: () => Type.OnePair,
+  }
+
+  if (jokers > 0) {
+    type = jokerMap[type](jokers)
   }
 
   return Number(type)
